@@ -3,7 +3,8 @@
 import click
 from flask.cli import with_appcontext
 from app.extensions import db
-from app.models import Usuario, Categoria
+from decimal import Decimal
+from app.models import Usuario, Categoria, Producto
 
 
 @click.command('init-db')
@@ -13,7 +14,22 @@ def init_db():
     click.echo('Creando tablas de base de datos...')
     db.create_all()
 
-    # Crear categorías iniciales si no existen
+    # 1. Crear Administrador
+    if not Usuario.query.filter_by(username='admin').first():
+        admin = Usuario(
+            username='admin',
+            email='admin@floreria.com',
+            nombre_completo='Administrador Principal',
+            rol='admin',
+            activo=True
+        )
+        admin.set_password('admin123') # La contraseña será admin123
+        db.session.add(admin)
+        click.echo('✅ Usuario Admin creado (User: admin / Pass: admin123)')
+    else:
+        click.echo('⚠️ El usuario Admin ya existe.')
+        
+    # 2. Crear categorías iniciales si no existen
     categorias = [
         {'nombre': 'Rosas', 'descripcion': 'Rosas de diferentes colores y variedades', 'slug': 'rosas'},
         {'nombre': 'Orquídeas', 'descripcion': 'Orquídeas exóticas y elegantes', 'slug': 'orquideas'},
@@ -22,11 +38,69 @@ def init_db():
         {'nombre': 'Plantas Suculentas', 'descripcion': 'Suculentas fáciles de cuidar', 'slug': 'suculentas'},
     ]
 
+    cats_creadas = {}  # AQUÍ ESTÁ EL DICCIONARIO SOLUCIONADO
     for cat_data in categorias:
-        if not Categoria.query.filter_by(slug=cat_data['slug']).first():
+        categoria = Categoria.query.filter_by(slug=cat_data['slug']).first()
+        if not categoria:
             categoria = Categoria(**cat_data)
             db.session.add(categoria)
+            db.session.flush()  # IMPORTANTE: Esto le asigna un ID a la categoría
             click.echo(f'  - Categoría creada: {cat_data["nombre"]}')
+        cats_creadas[cat_data['slug']] = categoria
+
+    # 3. Crear productos
+    if Producto.query.count() == 0:
+        productos_data = [
+            Producto(
+                nombre='Ramo "Amor Eterno" de 24 Rosas Rojas',
+                descripcion='Espectacular ramo de 24 rosas rojas de tallo largo, importadas. Ideal para aniversarios, propuestas o para expresar amor profundo. Incluye follaje fino y envoltura de papel coreano negro.',
+                precio=Decimal('450.00'),
+                stock=15,
+                sku='ROS-024-ROJ',
+                categoria_id=cats_creadas['rosas'].id, 
+                imagen='productos/ramo_rosas.jpg', 
+                destacado=True,
+                activo=True
+            ),
+            Producto(
+                nombre='Orquídea Phalaenopsis Blanca en Base de Cerámica',
+                descripcion='Elegante orquídea Phalaenopsis de dos varas en color blanco puro. Perfecta para decorar oficinas, salas de estar o como un regalo corporativo sofisticado. Fácil cuidado.',
+                precio=Decimal('650.00'),
+                stock=8,
+                sku='ORQ-PHA-BLA',
+                categoria_id=cats_creadas['orquideas'].id,
+                imagen='productos/orquidea_blanca.jpg',
+                destacado=True,
+                activo=True
+            ),
+            Producto(
+                nombre='Arreglo Primaveral "Amanecer"',
+                descripcion='Un diseño alegre y colorido que combina girasoles, gerberas y lisiantus en una base rústica de madera. Transmite alegría y buenas energías.',
+                precio=Decimal('380.00'),
+                stock=12,
+                sku='ARR-PRI-001',
+                categoria_id=cats_creadas['arreglos-florales'].id,
+                imagen='productos/arreglo_primaveral.jpg',
+                destacado=False,
+                activo=True
+            ),
+            Producto(
+                nombre='Monstera Deliciosa (Costilla de Adán)',
+                descripcion='La planta de interior por excelencia. Hojas grandes y perforadas que dan un toque tropical a cualquier espacio. Incluye maceta plástica decorativa blanca.',
+                precio=Decimal('220.00'),
+                stock=5,
+                sku='PLA-MON-001',
+                categoria_id=cats_creadas['plantas-interior'].id,
+                imagen='productos/monstera.jpg',
+                destacado=False,
+                activo=True
+            )
+        ]
+        
+        db.session.add_all(productos_data)
+        click.echo('✅ 4 Productos creados.')
+    else:
+        click.echo('⚠️ Los productos ya existen en la base de datos.')
 
     db.session.commit()
     click.echo('Base de datos inicializada correctamente!')
