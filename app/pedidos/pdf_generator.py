@@ -194,7 +194,7 @@ def generar_factura_pdf(pedido):
         alignment=TA_CENTER
     )
     elementos.append(Paragraph("<i>¡Gracias por su compra!</i>", estilo_footer))
-    elementos.append(Paragraph("Florería Examen - Tu florería de confianza", estilo_footer))
+    elementos.append(Paragraph("Florería - Tu florería de confianza", estilo_footer))
 
     # Construir PDF
     doc.build(elementos)

@@ -49,7 +49,7 @@ DATABASE_URL=mysql+pymysql://root:tu_password@localhost/floreria_db
 
 ### 4. Inicializar base de datos
 
-en caso de no usar uv colocar 
+en caso de no usar uv colocar esto levanta tablas y seeders
 
 ```bash
 uv run flask db init
